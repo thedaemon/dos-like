@@ -7,7 +7,7 @@
 dos-like is a programming library/framework, kind of like a tiny game engine, for writing games and programs
 with a similar feel to MS-DOS productions from the early 90s. But rather than writing code that would run on
 a real DOS machine, dos-like is about making programs which run on modern platforms like Windows, Mac and
-Linux, but which attempts to recreate the look, feel, and sound of old DOS programs. 
+Linux, but which attempts to recreate the look, feel, and sound of old DOS programs.
 
 It includes a bunch of examples of classic DOS techniques and effects, a few of which can be seen above.
 
@@ -40,13 +40,13 @@ Tiny C Compiler for windows is included. To build all samples, run build_all.bat
 To build individual samples, do:
 ```
   tcc\tcc source\stranded.c source\dos.c
-```  
+```
 where `stranded.c` should be replaced with the sample you would like to build.
 
 Alternatively, from a Visual Studio Developer Command Prompt, do:
 ```
   cl source\stranded.c source\dos.c
-```  
+```
 where `stranded.c` should be replaced with the sample you would like to build.
 
 
@@ -61,7 +61,7 @@ where `stranded.c` should be replaced with the sample you would like to build.
 
 SDL2 and GLEW are required - if you don't have them installed you can do so with Homebrew by running
 ```
-  brew install sdl2 glew  
+  brew install sdl2 glew
 ```
 
 
@@ -80,6 +80,10 @@ SDL2 and GLEW are required - if you don't have them installed you can do so on U
   sudo apt-get install libglew-dev
 ```
 
+### FreeBSD
+
+I updated it to compile on FreeBSD, I'll clean it up maybe. Right now it's replacing an "unknown" OS.
+
 
 ### WebAssembly
 
@@ -90,7 +94,7 @@ To build individual samples, do:
 ```
 where `burn.c` should be replaced with the sample you would like to build.
 
-You can embed asset files in the process with the -embed parameter. 
+You can embed asset files in the process with the -embed parameter.
 For examples of this, see the file [build_all_wasm.bat](build_all_wasm.bat)
 
 A WebAssembly build environment is required. You can download it (for Windows) here: [releases/tag/wasm-env](../../releases/tag/wasm-env).

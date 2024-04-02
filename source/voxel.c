@@ -9,12 +9,12 @@
 #include "dos.h"
 
 int main( int argc, char* argv[] ) {
-    setvideomode( videomode_320x200 ); 
+    setvideomode( videomode_320x200 );
 
     uint8_t palette[ 768 ];
     int mapwidth, mapheight, palcount;
-    uint8_t* mapcol = loadgif( "files/C1W.gif", &mapwidth, &mapheight, &palcount, palette );    
-    uint8_t* mapalt = loadgif( "files/D1.gif", &mapwidth, &mapheight, NULL, NULL );    
+    uint8_t* mapcol = loadgif( "files/C1W.gif", &mapwidth, &mapheight, &palcount, palette );
+    uint8_t* mapalt = loadgif( "files/D1.gif", &mapwidth, &mapheight, NULL, NULL );
 
     for( int i = 0; i < palcount; ++i ) {
         setpal(i, palette[ 3 * i + 0 ],palette[ 3 * i + 1 ], palette[ 3 * i + 2 ] );
@@ -35,7 +35,7 @@ int main( int argc, char* argv[] ) {
 
     while( !shuttingdown() ) {
         waitvbl();
-        clearscreen();        
+        clearscreen();
 
         if( keystate( KEY_LEFT ) ) camera.angle += 0.02f;
         if( keystate( KEY_RIGHT ) ) camera.angle -= 0.02f;
@@ -90,13 +90,13 @@ int main( int argc, char* argv[] ) {
                 for( int y = heightonscreen; y < hiddeny[ i ]; ++y ) {
                     screen[ i + y * 320 ] = (uint8_t)col;
                 }
-                if( heightonscreen < hiddeny[ i ] )  hiddeny[ i ] = heightonscreen; 
+                if( heightonscreen < hiddeny[ i ] )  hiddeny[ i ] = heightonscreen;
                 plx += dx;
                 ply += dy;
             }
             deltaz += 0.005f;
         }
-        
+
         setcolor( 255 );
         outtextxy( 10, 10, "UP/DOWN/LEFT/RIGHT - move/turn" );
         outtextxy( 10, 18, "R/F - change altitude" );

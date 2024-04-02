@@ -605,7 +605,7 @@ struct thread_queue_t
         } THREADNAME_INFO;
     #pragma pack(pop)
 
-    #ifndef __TINYC__
+    #ifndef __TINYC__ 
         #pragma comment( lib, "winmm.lib" )
     #endif
 
@@ -626,8 +626,7 @@ struct thread_queue_t
 #elif defined( __wasm__ )
     // wasm has no threads
 #else
-    #include <pthread.h>
-    #include <sys/time.h>
+    #error Unknown platform.
 #endif
 
 
@@ -650,7 +649,7 @@ thread_id_t thread_current_thread_id( void )
         // wasm has no threads
         return NULL;
     #else
-        return (void*) pthread_self();
+        #error Unknown platform.
     #endif
     }
 
@@ -668,7 +667,7 @@ void thread_yield( void )
     #elif defined( __wasm__ )
         // wasm has no threads
     #else
-        sched_yield();
+        #error Unknown platform.
     #endif
     }
 
@@ -686,7 +685,7 @@ void thread_exit( int return_code )
     #elif defined( __wasm__ )
         // wasm has no threads
     #else
-        pthread_exit( (void*)(uintptr_t) return_code );
+        #error Unknown platform.
     #endif
     }
 
@@ -714,11 +713,7 @@ thread_ptr_t thread_create( int (*thread_proc)( void* ), void* user_data, int st
         // wasm has no threads
         return NULL;
     #else
-        pthread_t thread;
-        if( 0 != pthread_create( &thread, NULL, ( void* (*)( void * ) ) thread_proc, user_data ) )
-            return NULL;
-
-        return (thread_ptr_t) thread;
+        #error Unknown platform.
     #endif
     }
 
@@ -737,7 +732,7 @@ void thread_destroy( thread_ptr_t thread )
     #elif defined( __wasm__ )
         // wasm has no threads
     #else
-        pthread_join( (pthread_t) thread, NULL );
+        #error Unknown platform.
     #endif
     }
 
@@ -761,9 +756,7 @@ int thread_join( thread_ptr_t thread )
         // wasm has no threads
         return 0;
     #else
-        void* retval;
-        pthread_join( (pthread_t) thread, &retval );
-        return (int)(uintptr_t) retval;
+        #error Unknown platform.
     #endif
     }
 
@@ -784,10 +777,7 @@ void thread_set_high_priority( thread_ptr_t thread )
     #elif defined( __wasm__ )
         // wasm has no threads
     #else
-        struct sched_param sp;
-        memset( &sp, 0, sizeof( sp ) );
-        sp.sched_priority = sched_get_priority_min( SCHED_RR );
-        pthread_setschedparam( pthread_self(), SCHED_RR, &sp);
+        #error Unknown platform.
     #endif
     }
 
@@ -814,10 +804,7 @@ void thread_mutex_init( thread_mutex_t* mutex )
     #elif defined( __wasm__ )
         // wasm has no threads
     #else
-        // Compile-time size check
-        struct x { char thread_mutex_type_too_small : ( sizeof( thread_mutex_t ) < sizeof( pthread_mutex_t ) ? 0 : 1 ); };
-
-        pthread_mutex_init( (pthread_mutex_t*) mutex, NULL );
+        #error Unknown platform.
     #endif
     }
 
@@ -835,7 +822,7 @@ void thread_mutex_term( thread_mutex_t* mutex )
     #elif defined( __wasm__ )
         // wasm has no threads
     #else
-        pthread_mutex_destroy( (pthread_mutex_t*) mutex );
+        #error Unknown platform.
     #endif
     }
 
@@ -853,7 +840,7 @@ void thread_mutex_lock( thread_mutex_t* mutex )
     #elif defined( __wasm__ )
         // wasm has no threads
     #else
-        pthread_mutex_lock( (pthread_mutex_t*) mutex );
+        #error Unknown platform.
     #endif
     }
 
@@ -871,7 +858,7 @@ void thread_mutex_unlock( thread_mutex_t* mutex )
     #elif defined( __wasm__ )
         // wasm has no threads
     #else
-        pthread_mutex_unlock( (pthread_mutex_t*) mutex );
+        #error Unknown platform.
     #endif
     }
 
@@ -897,9 +884,7 @@ struct thread_internal_signal_t
     #elif defined( __wasm__ )
         // wasm has no threads
     #else
-       pthread_mutex_t mutex;
-        pthread_cond_t condition;
-        int value;
+        #error Unknown platform.
     #endif
     };
 
@@ -946,9 +931,7 @@ void thread_signal_init( thread_signal_t* signal )
     #elif defined( __wasm__ )
         // wasm has no threads
     #else
-        pthread_mutex_init( &internal->mutex, NULL );
-        pthread_cond_init( &internal->condition, NULL );
-        internal->value = 0;
+        #error Unknown platform.
     #endif
     }
 
@@ -973,8 +956,7 @@ void thread_signal_init( thread_signal_t* signal )
     #elif defined( __wasm__ )
         // wasm has no threads
     #else
-        pthread_mutex_destroy( &internal->mutex );
-        pthread_cond_destroy( &internal->condition );
+        #error Unknown platform.
     #endif
     }
 
@@ -1004,10 +986,7 @@ void thread_signal_raise( thread_signal_t* signal )
     #elif defined( __wasm__ )
         // wasm has no threads
     #else
-        pthread_mutex_lock( &internal->mutex );
-        internal->value = 1;
-        pthread_mutex_unlock( &internal->mutex );
-        pthread_cond_signal( &internal->condition );
+        #error Unknown platform.
     #endif
     }
 
@@ -1063,29 +1042,7 @@ int thread_signal_wait( thread_signal_t* signal, int timeout_ms )
         // wasm has no threads
         return 0;
     #else
-        struct timespec ts;
-        if( timeout_ms >= 0 )
-            {
-            struct timeval tv;
-            gettimeofday( &tv, NULL );
-            ts.tv_sec = time( NULL ) + timeout_ms / 1000;
-            ts.tv_nsec = tv.tv_usec * 1000 + 1000 * 1000 * ( timeout_ms % 1000 );
-            ts.tv_sec += ts.tv_nsec / ( 1000 * 1000 * 1000 );
-            ts.tv_nsec %= ( 1000 * 1000 * 1000 );
-            }
-
-        int failed = 0;
-        pthread_mutex_lock( &internal->mutex );
-        while( !internal->value && !failed )
-            {
-            if( timeout_ms < 0 )
-                failed = pthread_cond_wait( &internal->condition, &internal->mutex );
-            else
-                failed = pthread_cond_timedwait( &internal->condition, &internal->mutex, &ts );
-            }
-        if( !failed ) internal->value = 0;
-        pthread_mutex_unlock( &internal->mutex );
-        return !failed;
+        #error Unknown platform.
     #endif
     }
 
@@ -1105,13 +1062,9 @@ int thread_atomic_int_load( thread_atomic_int_t* atomic )
     #elif defined( __wasm__ )
         // wasm has no threads
         return 0;
-        int ret;
-        __atomic_load( &atomic->i, &ret, __ATOMIC_SEQ_CST );
-        return ret;
+    #else
+        #error Unknown platform.
     #endif
-            int ret;
-        __atomic_load( &atomic->i, &ret, __ATOMIC_SEQ_CST );
-        return ret;
     }
 
 
@@ -1128,7 +1081,7 @@ void thread_atomic_int_store( thread_atomic_int_t* atomic, int desired )
     #elif defined( __wasm__ )
         // wasm has no threads
     #else
-        __atomic_store( &atomic->i, &desired, __ATOMIC_SEQ_CST );
+        #error Unknown platform.
     #endif
     }
 
@@ -1147,7 +1100,7 @@ int thread_atomic_int_inc( thread_atomic_int_t* atomic )
         // wasm has no threads
         return 0;
     #else
-        return (int)__atomic_fetch_add( &atomic->i, 1, __ATOMIC_SEQ_CST );
+        #error Unknown platform.
     #endif
     }
 
@@ -1166,7 +1119,7 @@ int thread_atomic_int_dec( thread_atomic_int_t* atomic )
         // wasm has no threads
         return 0;
     #else
-        return (int)__atomic_fetch_sub( &atomic->i, 1, __ATOMIC_SEQ_CST );
+        #error Unknown platform.
     #endif
     }
 
@@ -1186,7 +1139,7 @@ int thread_atomic_int_add( thread_atomic_int_t* atomic, int value )
         // wasm has no threads
         return 0;
     #else
-        return (int)__atomic_fetch_add( &atomic->i, value, __ATOMIC_SEQ_CST );
+        #error Unknown platform.
     #endif
     }
 
@@ -1205,7 +1158,7 @@ int thread_atomic_int_sub( thread_atomic_int_t* atomic, int value )
         // wasm has no threads
         return 0;
     #else
-        return (int)__atomic_fetch_sub( &atomic->i, value, __ATOMIC_SEQ_CST );
+        #error Unknown platform.
     #endif
     }
 
@@ -1227,9 +1180,7 @@ int thread_atomic_int_swap( thread_atomic_int_t* atomic, int desired )
         // wasm has no threads
         return 0;
     #else
-        int old;
-        __atomic_exchange( &atomic->i, &desired, &old, __ATOMIC_SEQ_CST );
-        return old;
+        #error Unknown platform.
     #endif
     }
 
@@ -1249,8 +1200,7 @@ int thread_atomic_int_compare_and_swap( thread_atomic_int_t* atomic, int expecte
         // wasm has no threads
         return 0;
     #else
-        __atomic_compare_exchange( &atomic->i, &expected, &desired, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST );
-        return expected;
+        #error Unknown platform.
     #endif
     }
 
@@ -1271,10 +1221,7 @@ void* thread_atomic_ptr_load( thread_atomic_ptr_t* atomic )
         // wasm has no threads
         return NULL;
     #else
-
-        void* ret;
-        __atomic_load( &atomic->ptr, &ret, __ATOMIC_SEQ_CST );
-        return ret;
+        #error Unknown platform.
     #endif
     }
 
@@ -1298,7 +1245,7 @@ void thread_atomic_ptr_store( thread_atomic_ptr_t* atomic, void* desired )
     #elif defined( __wasm__ )
         // wasm has no threads
     #else
-         __atomic_store( &atomic->ptr, &desired, 0 );
+        #error Unknown platform.
     #endif
     }
 
@@ -1324,9 +1271,7 @@ void* thread_atomic_ptr_swap( thread_atomic_ptr_t* atomic, void* desired )
         // wasm has no threads
         return NULL;
     #else
-        void* old;
-        __atomic_exchange( &atomic->ptr, &desired, &old, __ATOMIC_SEQ_CST );
-        return old;
+        #error Unknown platform.
     #endif
     }
 
@@ -1346,9 +1291,7 @@ void* thread_atomic_ptr_compare_and_swap( thread_atomic_ptr_t* atomic, void* exp
         // wasm has no threads
         return NULL;
     #else
-
-        __atomic_compare_exchange( &atomic->ptr, &expected, &desired, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST );
-        return expected;
+        #error Unknown platform.
     #endif
     }
 
@@ -1378,7 +1321,7 @@ void thread_timer_init( thread_timer_t* timer )
     #elif defined( __wasm__ )
         // wasm has no threads
     #else
-        // Nothing
+        #error Unknown platform.
     #endif
     }
 
@@ -1402,7 +1345,7 @@ void thread_timer_term( thread_timer_t* timer )
     #elif defined( __wasm__ )
         // wasm has no threads
     #else
-        // Nothing
+        #error Unknown platform.
     #endif
     }
 
@@ -1429,12 +1372,7 @@ void thread_timer_wait( thread_timer_t* timer, THREAD_U64 nanoseconds )
     #elif defined( __wasm__ )
         // wasm has no threads
     #else
-        struct timespec rem;
-        struct timespec req;
-        req.tv_sec = nanoseconds / 1000000000ULL;
-        req.tv_nsec = nanoseconds - req.tv_sec * 1000000000ULL;
-        while( nanosleep( &req, &rem ) )
-            req = rem;
+        #error Unknown platform.
     #endif
     }
 
@@ -1461,11 +1399,7 @@ thread_tls_t thread_tls_create( void )
         // wasm has no threads
         return NULL;
     #else
-        pthread_key_t tls;
-        if( pthread_key_create( &tls, NULL ) == 0 )
-            return (thread_tls_t) (uintptr_t) tls;
-        else
-            return NULL;
+        #error Unknown platform.
     #endif
     }
 
@@ -1483,7 +1417,7 @@ void thread_tls_destroy( thread_tls_t tls )
     #elif defined( __wasm__ )
         // wasm has no threads
     #else
-        pthread_key_delete( (pthread_key_t) (uintptr_t) tls );
+        #error Unknown platform.
     #endif
     }
 
@@ -1501,7 +1435,7 @@ void thread_tls_set( thread_tls_t tls, void* value )
     #elif defined( __wasm__ )
         // wasm has no threads
     #else
-        pthread_setspecific( (pthread_key_t) (uintptr_t) tls, value );
+        #error Unknown platform.
     #endif
     }
 
@@ -1520,7 +1454,7 @@ void* thread_tls_get( thread_tls_t tls )
         // wasm has no threads
         return NULL;
     #else
-        return pthread_getspecific( (pthread_key_t) (uintptr_t) tls );
+        #error Unknown platform.
     #endif
     }
 
